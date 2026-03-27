@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Telegram Auth - Obtener SESSION</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .logo h1 {
+      color: #fff;
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    .logo p {
+      color: rgba(255, 255, 255, 0.6);
+      margin-top: 8px;
+      font-size: 14px;
+    }
+
+    .step {
+      display: none;
+    }
+
+    .step.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .step-indicator {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 30px;
+    }
+
+    .step-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      transition: all 0.3s;
+    }
+
+    .step-dot.active {
+      background: #00d4aa;
+      box-shadow: 0 0 15px #00d4aa;
+    }
+
+    .step-dot.completed {
+      background: #00d4aa;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 14px;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    input {
+      width: 100%;
+      padding: 16px 20px;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+      font-size: 16px;
+      transition: all 0.3s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #00d4aa;
+      box-shadow: 0 0 20px rgba(0, 212, 170, 0.2);
+    }
+
+    input::placeholder {
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    button {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #00d4aa 0%, #00b894 100%);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(0, 212, 170, 0.3);
+    }
+
+    button:disabled {
+      background: rgba(255, 255, 255, 0.2);
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 0.8s linear infinite;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .error {
+      background: rgba(255, 82, 82, 0.2);
+      border: 1px solid rgba(255, 82, 82, 0.5);
+      color: #ff5252;
+      padding: 12px 16px;
+      border-radius: 10px;
+      margin-top: 15px;
+      font-size: 14px;
+    }
+
+    .success {
+      background: rgba(0, 212, 170, 0.2);
+      border: 1px solid rgba(0, 212, 170, 0.5);
+      color: #00d4aa;
+      padding: 12px 16px;
+      border-radius: 10px;
+      margin-top: 15px;
+      font-size: 14px;
+    }
+
+    .session-box {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 20px;
+      word-break: break-all;
+      font-family: monospace;
+      font-size: 12px;
+      color: #00d4aa;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+
+    .user-info {
+      background: rgba(0, 212, 170, 0.1);
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+
+    .user-info p {
+      color: rgba(255, 255, 255, 0.8);
+      margin: 5px 0;
+      font-size: 14px;
+    }
+
+    .user-info strong {
+      color: #00d4aa;
+    }
+
+    .copy-btn {
+      background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
+      margin-top: 15px;
+    }
+
+    .instructions {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+
+    .instructions h3 {
+      color: #fff;
+      font-size: 16px;
+      margin-bottom: 12px;
+    }
+
+    .instructions ol {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 14px;
+      padding-left: 20px;
+    }
+
+    .instructions li {
+      margin: 8px 0;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <h1>🎬 Telegram Auth</h1>
+      <p>Obtén tu TELEGRAM_SESSION para MTProto</p>
+    </div>
+
+    <div class="step-indicator">
+      <div class="step-dot active" id="dot1"></div>
+      <div class="step-dot" id="dot2"></div>
+      <div class="step-dot" id="dot3"></div>
+    </div>
+
+    <!-- Paso 1: Número de teléfono -->
+    <div class="step active" id="step1">
+      <div class="form-group">
+        <label>📱 Número de teléfono</label>
+        <input 
+          type="tel" 
+          id="phoneInput" 
+          placeholder="+18294889614"
+          value="+18294889614"
+        >
+      </div>
+      <button onclick="sendCode()" id="sendCodeBtn">
+        Enviar Código
+      </button>
+      <div id="step1Error" class="error hidden"></div>
+    </div>
+
+    <!-- Paso 2: Código de verificación -->
+    <div class="step" id="step2">
+      <div class="form-group">
+        <label>🔑 Código de verificación</label>
+        <input 
+          type="text" 
+          id="codeInput" 
+          placeholder="12345"
+          maxlength="6"
+        >
+        <p style="color: rgba(255,255,255,0.5); font-size: 12px; margin-top: 8px;">
+          Revisa tu Telegram para obtener el código
+        </p>
+      </div>
+      <button onclick="verifyCode()" id="verifyBtn">
+        Verificar
+      </button>
+      <div id="step2Error" class="error hidden"></div>
+    </div>
+
+    <!-- Paso 3: Sesión obtenida -->
+    <div class="step" id="step3">
+      <div class="success">
+        ✅ ¡Autenticación exitosa!
+      </div>
+      
+      <div class="user-info" id="userInfo">
+        <p><strong>👤 Usuario:</strong> <span id="userName">-</span></p>
+        <p><strong>📱 Teléfono:</strong> <span id="userPhone">-</span></p>
+        <p><strong>🆔 ID:</strong> <span id="userId">-</span></p>
+      </div>
+
+      <label>📝 TELEGRAM_SESSION</label>
+      <div class="session-box" id="sessionBox"></div>
+      
+      <button class="copy-btn" onclick="copySession()">
+        📋 Copiar SESSION
+      </button>
+
+      <div class="instructions">
+        <h3>📌 Siguientes pasos:</h3>
+        <ol>
+          <li>Copia el TELEGRAM_SESSION</li>
+          <li>Ve a Vercel → Tu proyecto → Settings → Environment Variables</li>
+          <li>Agrega: <code>TELEGRAM_SESSION</code> = <code>[tu sesión]</code></li>
+          <li>Redespliega tu proyecto</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentStep = 1
+
+    function showStep(step) {
+      document.querySelectorAll('.step').forEach(s => s.classList.remove('active'))
+      document.querySelectorAll('.step-dot').forEach(d => d.classList.remove('active'))
+      
+      document.getElementById(`step${step}`).classList.add('active')
+      document.getElementById(`dot${step}`).classList.add('active')
+      
+      for (let i = 1; i < step; i++) {
+        document.getElementById(`dot${i}`).classList.add('completed')
+      }
+      
+      currentStep = step
+    }
+
+    function showError(elementId, message) {
+      const el = document.getElementById(elementId)
+      el.textContent = message
+      el.classList.remove('hidden')
+    }
+
+    function hideError(elementId) {
+      document.getElementById(elementId).classList.add('hidden')
+    }
+
+    function setButtonLoading(btnId, loading, text = '') {
+      const btn = document.getElementById(btnId)
+      btn.disabled = loading
+      btn.innerHTML = loading 
+        ? `<span class="loading"></span> ${text || 'Procesando...'}` 
+        : text || btn.dataset.originalText || 'Continuar'
+    }
+
+    async function sendCode() {
+      hideError('step1Error')
+      const phone = document.getElementById('phoneInput').value.trim()
+      
+      if (!phone) {
+        showError('step1Error', 'Ingresa tu número de teléfono')
+        return
+      }
+
+      setButtonLoading('sendCodeBtn', true, 'Enviando...')
+      
+      try {
+        const res = await fetch('/api/send-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone })
+        })
+        
+        const data = await res.json()
+        
+        if (data.success) {
+          showStep(2)
+        } else {
+          showError('step1Error', data.error || 'Error al enviar código')
+        }
+      } catch (err) {
+        showError('step1Error', 'Error de conexión. Intenta de nuevo.')
+      }
+      
+      setButtonLoading('sendCodeBtn', false, 'Enviar Código')
+    }
+
+    async function verifyCode() {
+      hideError('step2Error')
+      const code = document.getElementById('codeInput').value.trim()
+      
+      if (!code) {
+        showError('step2Error', 'Ingresa el código de verificación')
+        return
+      }
+
+      setButtonLoading('verifyBtn', true, 'Verificando...')
+      
+      try {
+        const res = await fetch('/api/verify-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code })
+        })
+        
+        const data = await res.json()
+        
+        if (data.success) {
+          // Mostrar datos
+          document.getElementById('userName').textContent = 
+            `${data.user.firstName || ''} ${data.user.lastName || ''}`.trim() || 'N/A'
+          document.getElementById('userPhone').textContent = data.user.phone || 'N/A'
+          document.getElementById('userId').textContent = data.user.id || 'N/A'
+          document.getElementById('sessionBox').textContent = data.session
+          
+          showStep(3)
+        } else {
+          showError('step2Error', data.error || 'Código inválido')
+        }
+      } catch (err) {
+        showError('step2Error', 'Error de conexión. Intenta de nuevo.')
+      }
+      
+      setButtonLoading('verifyBtn', false, 'Verificar')
+    }
+
+    function copySession() {
+      const session = document.getElementById('sessionBox').textContent
+      navigator.clipboard.writeText(session).then(() => {
+        const btn = document.querySelector('.copy-btn')
+        btn.textContent = '✅ Copiado!'
+        setTimeout(() => {
+          btn.textContent = '📋 Copiar SESSION'
+        }, 2000)
+      })
+    }
+
+    // Enter key
+    document.getElementById('phoneInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') sendCode()
+    })
+    
+    document.getElementById('codeInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') verifyCode()
+    })
+  </script>
+</body>
+</html>
